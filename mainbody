@@ -1,0 +1,73 @@
+//实体类
+@Setter
+@Getter
+@ToString
+public class Employee {
+    private String name;
+    private String password;
+}
+//service
+public interface EmployeeService {
+    void save(Employee employee);
+    void update(Employee employee);
+}
+public class EmployeeServiceImpl implements EmployeeService {
+    @Override
+    public void save(Employee employee) {
+        System.out.println("employeeService保存操作");
+    }
+    @Override
+    public void update(Employee employee) {
+        System.out.println("employeeService更新操作");
+    }
+}
+//一个简单的事务处理
+public class TransactionManager {
+    public void begin() {
+        System.out.println("开启事务。。。");
+    }
+    public void commit() {
+        System.out.println("提交事务。。。");
+    }
+    public void rollback() {
+        System.out.println("回滚。。。");
+    }
+}
+//handler
+public class DynamicHandler implements InvocationHandler {
+    private Object target = new EmployeeServiceImpl();
+    private TransactionManager tx = new TransactionManager();
+    @Override
+    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+        Object o = null;
+        try{
+            System.out.println("handler执行invoke方法");
+            tx.begin();
+            //代理类的方法
+            o = method.invoke(target, args);
+            tx.commit();
+        }catch (Exception e) {
+            tx.rollback();
+        }
+        return o;
+    }
+}
+//测试
+public class ProxyTest {
+    @Test
+    public void test() {
+        ClassLoader classLoader = EmployeeService.class.getClassLoader();
+        DynamicHandler h = new DynamicHandler();
+        //生成代理类对象
+        Object o = Proxy.newProxyInstance(classLoader, new Class[]{EmployeeService.class}, h);
+        System.out.println(o.getClass());
+        EmployeeService service = (EmployeeService) o;
+        service.save(new Employee());
+
+    }
+}
+
+
+
+
+
